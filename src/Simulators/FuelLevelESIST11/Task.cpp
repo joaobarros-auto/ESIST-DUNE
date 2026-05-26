@@ -71,6 +71,7 @@ namespace Simulators
 
         bind<IMC::Rpm>(this);
         bind<IMC::CpuUsage>(this);
+        bind<IMC::EstimatedState>(this);
       }
 
       //! Update internal state with new parameter values.
@@ -132,6 +133,13 @@ namespace Simulators
           m_fuel.value = m_fuel.value - diff;
         else
           m_fuel.value = 0.0f;
+        //war("cpu_perc: %d", msg->value);
+      }
+
+      void
+      consume(const IMC::EstimatedState* msg)
+      { 
+
         //war("cpu_perc: %d", msg->value);
       }
 
