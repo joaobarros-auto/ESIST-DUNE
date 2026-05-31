@@ -48,6 +48,20 @@ namespace Simulators
       float m_perc_per_rpm;
       float m_perc_per_cpu;
 
+      double m_target_lat_deg;
+      double m_target_lon_deg;
+      double m_target_lat;
+      double m_target_lon;
+      double m_target_radius;
+      double m_distance_to_target;
+      bool m_inside_target_radius;
+      double m_target_x;
+      double m_target_y;
+      double m_target_z;
+      double m_dx;
+      double m_dy;
+      float m_recharge_per_sec;
+
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
@@ -68,6 +82,21 @@ namespace Simulators
         .defaultValue("0.0001")
         .minimumValue("0.0000")
         .maximumValue("0.0010");
+
+	param("Target Latitude", m_target_lat_deg)
+	.defaultValue("41.1850");
+
+	param("Target Longitude", m_target_lon_deg)
+	.defaultValue("-8.7062");
+
+	param("Target Radius", m_target_radius)
+	.defaultValue("10.0")
+	.minimumValue("5.0");
+
+	param("Recharge per second", m_recharge_per_sec)
+	.defaultValue("5.0")
+	.minimumValue("0.0")
+	.maximumValue("20.0");
 
         bind<IMC::Rpm>(this);
         bind<IMC::CpuUsage>(this);
@@ -139,8 +168,24 @@ namespace Simulators
       void
       consume(const IMC::EstimatedState* msg)
       { 
+	m_target_lat = Angles::radians(m_target_lat_deg);
+	m_target_lon = Angles::radians(m_target_lon_deg);
 
-        //war("cpu_perc: %d", msg->value);
+	WGS84::displacement(msg->lat, msg->lon, msg->height,
+			    m_target_lat, m_target_lon, msg->height,
+			    &m_target_x, &m_target_y, &m_target_z);
+
+	m_dx = m_target_x - msg->x;
+	m_dy = m_target_y - msg->y;
+        
+	m_distance_to_target = std::sqrt(m_dx*m_dx + m_dy*m_dy);
+
+	if (m_distance_to_target <= m_target_radius)
+	  m_inside_target_radius = true;
+	else
+	  m_inside_target_radius = false;
+
+	//war("Distance to target: %.2f m | inside radius: %s | fuel: %.2f", m_distance_to_target, m_inside_target_radius ? "yes":"no", m_fuel.value);
       }
 
       //! Main loop.
@@ -151,12 +196,22 @@ namespace Simulators
         {
           waitForMessages(1.0);
           auto delta = m_delta.getDelta();
-          auto diff = delta * m_perc_per_sec;
-          if (m_fuel.value - diff > 0.0f)
-            m_fuel.value = m_fuel.value - diff;
-          else
-            m_fuel.value = 0.0f;
-          
+	  if(m_inside_target_radius)
+	  {
+	      auto diff = delta * m_recharge_per_sec;
+	      if (m_fuel.value + diff < 100.0f)
+		m_fuel.value = m_fuel.value + diff;
+	      else
+		m_fuel.value = 100.0f;
+	  }
+	  else
+	  {
+              auto diff = delta * m_perc_per_sec;
+       	      if (m_fuel.value - diff > 0.0f)
+                m_fuel.value = m_fuel.value - diff;
+              else
+                m_fuel.value = 0.0f;
+          }
 
           //war("fl: %.2f%%", m_fuel.value);
           dispatch(m_fuel);
