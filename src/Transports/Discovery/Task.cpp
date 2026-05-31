@@ -70,7 +70,7 @@ namespace Transports
       {
         // Define configuration parameters.
         param("Ports", m_args.ports)
-        .defaultValue("30100, 30101, 30102, 30103, 30104")
+        .defaultValue("30100, 30101, 30102, 30103, 30104, 30105, 30106, 30107, 30108, 30109, 30110, 30111, 30112")
         .description("List of destination ports");
 
         param("Multicast Address", m_args.addr_mcast)
