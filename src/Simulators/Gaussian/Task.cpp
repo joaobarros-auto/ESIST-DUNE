@@ -125,7 +125,8 @@ namespace Simulators
         {
           Memory::clear(m_msg);
           m_msg = IMC::Factory::produce(m_args.message_name);
-        }
+          war("Gaussian instance producing: %s", m_args.message_name.c_str());
+	}
 
         if (paramChanged(m_args.peak_lat))
           m_args.peak_lat = Angles::radians(m_args.peak_lat);
@@ -197,6 +198,7 @@ namespace Simulators
         double val = m_args.away_val + (m_args.peak_val - m_args.away_val) * expn;
         val += m_prng->gaussian() * m_args.std_dev;
         m_msg->setValueFP(val);
+	war("Guassian dispatching: %s", m_msg->getName());
         dispatch(m_msg);
       }
     };
